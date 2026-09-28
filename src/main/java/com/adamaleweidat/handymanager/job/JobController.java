@@ -1,5 +1,6 @@
 package com.adamaleweidat.handymanager.job;
 
+import com.adamaleweidat.handymanager.dto.JobResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,34 +19,35 @@ public class JobController {
     }
 
     @GetMapping("/{id}")
-    public Job getJob(@PathVariable Long id) {
-        return jobService.getJob(id);
+    public JobResponse getJob(@PathVariable Long id) {
+        Job job = jobService.getJob(id);
+        return new JobResponse(job);
     }
 
     @GetMapping
-    public List<Job> getAllJobs() {
-        return jobService.getAllJobs();
+    public List<JobResponse> getAllJobs() {
+        return jobService.getAllJobs().stream().map(JobResponse::new).toList();
     }
 
     @PostMapping("/customer/{customerId}")
-    public ResponseEntity<Job> createJob(@PathVariable Long customerId, @Valid @RequestBody Job job) {
+    public ResponseEntity<JobResponse> createJob(@PathVariable Long customerId, @Valid @RequestBody Job job) {
         Job savedJob = jobService.createJob(customerId, job);
-        return ResponseEntity.status(HttpStatus.CREATED).body(savedJob);
+        return ResponseEntity.status(HttpStatus.CREATED).body(new JobResponse(savedJob));
     }
 
     @GetMapping("/customer/{customerId}")
-    public List<Job> getJobsByCustomer(@PathVariable Long customerId) {
-        return jobService.getJobsByCustomer(customerId);
+    public List<JobResponse> getJobsByCustomer(@PathVariable Long customerId) {
+        return jobService.getJobsByCustomer(customerId).stream().map(JobResponse::new).toList();
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Job> updateJob(@PathVariable Long id, @Valid @RequestBody Job updatedJob) {
+    public ResponseEntity<JobResponse> updateJob(@PathVariable Long id, @Valid @RequestBody Job updatedJob) {
         Job savedJob = jobService.updateJob(id, updatedJob);
-        return ResponseEntity.ok(savedJob);
+        return ResponseEntity.ok(new JobResponse(savedJob));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Job> deleteJob(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteJob(@PathVariable Long id) {
         jobService.deleteJob(id);
         return ResponseEntity.noContent().build();
     }

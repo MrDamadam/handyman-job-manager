@@ -1,5 +1,6 @@
 package com.adamaleweidat.handymanager.customer;
 
+import com.adamaleweidat.handymanager.dto.CustomerResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,25 +19,26 @@ public class CustomerController {
     }
 
     @PostMapping
-    public ResponseEntity<Customer> createCustomer(@Valid @RequestBody Customer customer) {
+    public ResponseEntity<CustomerResponse> createCustomer(@Valid @RequestBody Customer customer) {
         Customer savedCustomer = customerService.createCustomer(customer);
-        return ResponseEntity.status(HttpStatus.CREATED).body(savedCustomer);
+        return ResponseEntity.status(HttpStatus.CREATED).body(new CustomerResponse(savedCustomer));
     }
 
     @GetMapping("/{id}")
-    public Customer getCustomer(@PathVariable Long id) {
-        return customerService.getCustomer(id);
+    public CustomerResponse getCustomer(@PathVariable Long id) {
+        Customer customer = customerService.getCustomer(id);
+        return new CustomerResponse(customer);
     }
 
     @GetMapping
-    public List<Customer> getAllCustomers() {
-        return customerService.getAllCustomers();
+    public List<CustomerResponse> getAllCustomers() {
+        return customerService.getAllCustomers().stream().map(CustomerResponse::new).toList();
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Customer> updateCustomer(@PathVariable Long id, @Valid @RequestBody Customer updatedCustomer) {
+    public ResponseEntity<CustomerResponse> updateCustomer(@PathVariable Long id, @Valid @RequestBody Customer updatedCustomer) {
         Customer savedCustomer = customerService.updateCustomer(id, updatedCustomer);
-        return ResponseEntity.ok(savedCustomer);
+        return ResponseEntity.ok(new CustomerResponse(savedCustomer));
     }
 
     @DeleteMapping("/{id}")

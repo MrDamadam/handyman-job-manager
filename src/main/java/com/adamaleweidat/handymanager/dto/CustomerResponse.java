@@ -1,45 +1,35 @@
-package com.adamaleweidat.handymanager.customer;
+package com.adamaleweidat.handymanager.dto;
 
-import com.adamaleweidat.handymanager.job.Job;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
-import jakarta.persistence.*;
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
+import com.adamaleweidat.handymanager.customer.Customer;
 
 import java.util.List;
 
-@Entity
-public class Customer {
+public class CustomerResponse {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @NotBlank
     private String firstName;
-
-    @NotBlank
     private String lastName;
-
-    @Email
     private String email;
-
     private String phone;
+    private List<JobResponse> jobs;
 
-    @OneToMany(mappedBy = "customer")
-    private List<Job> jobs;
+    public CustomerResponse() {}
 
-    public Customer() {}
-
-    public Customer(String firstName, String lastName, String email, String phone) {
-        this.firstName = firstName;
-        this.lastName = lastName;
-        this.email = email;
-        this.phone = phone;
+    public CustomerResponse(Customer customer) {
+        this.id = customer.getId();
+        this.firstName = customer.getFirstName();
+        this.lastName = customer.getLastName();
+        this.email = customer.getEmail();
+        this.phone = customer.getPhone();
+        this.jobs = customer.getJobs().stream().map(JobResponse::new).toList();
     }
 
     public Long getId() {
         return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public String getFirstName() {
@@ -74,7 +64,11 @@ public class Customer {
         this.phone = phone;
     }
 
-    public List<Job> getJobs() {
+    public List<JobResponse> getJobs() {
         return jobs;
+    }
+
+    public void setJobs(List<JobResponse> jobs) {
+        this.jobs = jobs;
     }
 }

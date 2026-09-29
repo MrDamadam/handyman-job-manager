@@ -2,6 +2,7 @@ package com.adamaleweidat.handymanager.job;
 
 import com.adamaleweidat.handymanager.customer.Customer;
 import com.adamaleweidat.handymanager.customer.CustomerService;
+import com.adamaleweidat.handymanager.invoice.InvoiceRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -11,10 +12,12 @@ public class JobService {
 
     private final JobRepository jobRepository;
     private final CustomerService customerService;
+    private final InvoiceRepository invoiceRepository;
 
-    public JobService(JobRepository jobRepository, CustomerService customerService) {
+    public JobService(JobRepository jobRepository, CustomerService customerService, InvoiceRepository invoiceRepository) {
         this.jobRepository = jobRepository;
         this.customerService = customerService;
+        this.invoiceRepository = invoiceRepository;
     }
 
     public Job getJob(Long id) {
@@ -46,6 +49,11 @@ public class JobService {
 
     public void deleteJob(Long id) {
         getJob(id);
+
+        if (invoiceRepository.existsById(id)) {
+            throw new IllegalStateException("Job cannot be deleted because it has invoices");
+        }
+
         jobRepository.deleteById(id);
     }
 }

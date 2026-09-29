@@ -35,7 +35,8 @@ th {
   max-width: 600px;
 }
 
-input {
+input,
+select {
   padding: 10px 12px;
   border: 1px solid #ccc;
   border-radius: 4px;
@@ -56,4 +57,20 @@ button {
 
 .customers h2 {
   margin-bottom: 16px;
+}
+
+.jobs {
+  margin-top: 48px;
+}
+
+.jobs h2 {
+  margin-bottom: 16px;
+}
+
+.error-message {
+  margin: 12px 0;
+  padding: 10px 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-weight: 600;
 }

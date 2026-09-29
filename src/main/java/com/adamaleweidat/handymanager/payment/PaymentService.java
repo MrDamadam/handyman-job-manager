@@ -3,6 +3,7 @@ package com.adamaleweidat.handymanager.payment;
 import com.adamaleweidat.handymanager.invoice.Invoice;
 import com.adamaleweidat.handymanager.invoice.InvoiceService;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -30,6 +31,7 @@ public class PaymentService {
         return paymentRepository.findByInvoiceId(invoiceId);
     }
 
+    @Transactional
     public Payment createPayment(Long invoiceId, Payment payment) {
         Invoice invoice = invoiceService.getInvoice(invoiceId);
         payment.setInvoice(invoice);
@@ -46,6 +48,7 @@ public class PaymentService {
         return savedPayment;
     }
 
+    @Transactional
     public Payment updatePayment(Long id, Payment updatedPayment) {
         Payment existingPayment = getPayment(id);
 
@@ -69,6 +72,7 @@ public class PaymentService {
         return savedPayment;
     }
 
+    @Transactional
     public void deletePayment(Long id) {
         Payment payment = getPayment(id);
         Long  invoiceId = payment.getInvoice().getId();

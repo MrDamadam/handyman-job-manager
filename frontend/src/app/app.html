@@ -1,0 +1,7 @@
+<h1>Handyman Job Manager</h1>
+
+<ul>
+  @for (customer of customers(); track customer.id) {
+    <li>{{ customer.firstName }} {{ customer.lastName }}</li>
+  }
+</ul>

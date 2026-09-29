@@ -1,7 +1,121 @@
-<h1>Handyman Job Manager</h1>
+<div class="container">
+  <h1>Handyman Job Manager</h1>
 
-<ul>
-  @for (customer of customers(); track customer.id) {
-    <li>{{ customer.firstName }} {{ customer.lastName }}</li>
-  }
-</ul>
+  <section class="customers">
+    <h2>Customers</h2>
+
+    <section class="customer-form">
+      <h2>Add Customer</h2>
+
+      <form (ngSubmit)="createCustomer()">
+        <input
+          type="text"
+          name="firstName"
+          placeholder="First name"
+          [(ngModel)]="newCustomer.firstName"
+          required
+        >
+
+        <input
+          type="text"
+          name="lastName"
+          placeholder="Last name"
+          [(ngModel)]="newCustomer.lastName"
+          required
+        >
+
+        <input
+          type="email"
+          name="email"
+          placeholder="Email"
+          [(ngModel)]="newCustomer.email"
+          required
+        >
+
+        <input
+          type="text"
+          name="phone"
+          placeholder="Phone"
+          [(ngModel)]="newCustomer.phone"
+        >
+
+        <button type="submit">Add Customer</button>
+      </form>
+    </section>
+
+    @if (editingCustomer) {
+      <section class="customer-form">
+        <h2>Edit Customer</h2>
+
+        <form (ngSubmit)="saveCustomer()">
+          <input
+            type="text"
+            name="editFirstName"
+            placeholder="First name"
+            [(ngModel)]="editingCustomer.firstName"
+            required
+          >
+
+          <input
+            type="text"
+            name="editLastName"
+            placeholder="Last name"
+            [(ngModel)]="editingCustomer.lastName"
+            required
+          >
+
+          <input
+            type="email"
+            name="editEmail"
+            placeholder="Email"
+            [(ngModel)]="editingCustomer.email"
+            required
+          >
+
+          <input
+            type="text"
+            name="editPhone"
+            placeholder="Phone"
+            [(ngModel)]="editingCustomer.phone"
+          >
+
+          <div>
+            <button type="submit">Save</button>
+            <button type="button" (click)="cancelEdit()">Cancel</button>
+          </div>
+        </form>
+      </section>
+    }
+
+    <table>
+      <thead>
+      <tr>
+        <th>Name</th>
+        <th>Email</th>
+        <th>Phone</th>
+        <th>Actions</th>
+      </tr>
+      </thead>
+
+      <tbody>
+        @for (customer of customers(); track customer.id) {
+          <tr>
+            <td>{{ customer.firstName }} {{ customer.lastName }}</td>
+            <td>{{ customer.email }}</td>
+            <td>{{ customer.phone }}</td>
+            <td>
+              <button type="button" (click)="startEdit(customer)">
+                Edit
+              </button>
+            </td>
+            <td>
+              <button type="button" (click)="deleteCustomer(customer.id)">
+                Delete
+              </button>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </section>
+</div>

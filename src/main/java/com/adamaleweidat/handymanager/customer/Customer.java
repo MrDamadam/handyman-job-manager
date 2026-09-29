@@ -1,11 +1,11 @@
 package com.adamaleweidat.handymanager.customer;
 
 import com.adamaleweidat.handymanager.job.Job;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -27,7 +27,7 @@ public class Customer {
     private String phone;
 
     @OneToMany(mappedBy = "customer")
-    private List<Job> jobs;
+    private List<Job> jobs = new ArrayList<>();
 
     public Customer() {}
 

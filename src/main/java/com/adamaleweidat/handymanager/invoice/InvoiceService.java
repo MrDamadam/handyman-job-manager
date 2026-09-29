@@ -4,6 +4,7 @@ import com.adamaleweidat.handymanager.job.Job;
 import com.adamaleweidat.handymanager.job.JobService;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -48,5 +49,22 @@ public class InvoiceService {
     public void deleteInvoice(Long id) {
         getInvoice(id);
         invoiceRepository.deleteById(id);
+    }
+
+    public Invoice markInvoiceSent(Long id) {
+        Invoice invoice = getInvoice(id);
+
+        invoice.setStatus(InvoiceStatus.SENT);
+        invoice.setPaidDate(null);
+
+        return  invoiceRepository.save(invoice);
+    }
+    public Invoice markInvoicePaid(Long id) {
+        Invoice invoice = getInvoice(id);
+
+        invoice.setStatus(InvoiceStatus.PAID);
+        invoice.setPaidDate(LocalDateTime.now());
+
+        return invoiceRepository.save(invoice);
     }
 }

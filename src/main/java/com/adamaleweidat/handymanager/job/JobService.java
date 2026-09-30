@@ -2,7 +2,10 @@ package com.adamaleweidat.handymanager.job;
 
 import com.adamaleweidat.handymanager.customer.Customer;
 import com.adamaleweidat.handymanager.customer.CustomerService;
+import com.adamaleweidat.handymanager.invoice.Invoice;
 import com.adamaleweidat.handymanager.invoice.InvoiceRepository;
+import com.adamaleweidat.handymanager.invoice.InvoiceService;
+import com.adamaleweidat.handymanager.invoice.InvoiceStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -44,7 +47,11 @@ public class JobService {
         existingJob.setDescription(updatedJob.getDescription());
         existingJob.setEstimatedAmount(updatedJob.getEstimatedAmount());
         existingJob.setStatus(updatedJob.getStatus());
-        return jobRepository.save(existingJob);
+        Job savedJob = jobRepository.save(existingJob);
+        List<Invoice> draftInvoices = invoiceRepository.findByJobIdAndStatus(savedJob.getId(), InvoiceStatus.DRAFT);
+        draftInvoices.forEach(invoice -> invoice.setAmount(savedJob.getEstimatedAmount()));
+        invoiceRepository.saveAll(draftInvoices);
+        return savedJob;
     }
 
     public void deleteJob(Long id) {

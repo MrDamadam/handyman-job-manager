@@ -93,7 +93,7 @@
         <th>Name</th>
         <th>Email</th>
         <th>Phone</th>
-        <th>Actions</th>
+        <th class="actions-column">Actions</th>
       </tr>
       </thead>
 
@@ -103,12 +103,10 @@
             <td>{{ customer.firstName }} {{ customer.lastName }}</td>
             <td>{{ customer.email }}</td>
             <td>{{ customer.phone }}</td>
-            <td>
+            <td class="actions-column">
               <button type="button" (click)="startEdit(customer)">
                 Edit
               </button>
-            </td>
-            <td>
               <button type="button" (click)="deleteCustomer(customer.id)">
                 Delete
               </button>
@@ -229,7 +227,7 @@
         <th>Customer</th>
         <th>Status</th>
         <th>Estimate</th>
-        <th>Actions</th>
+        <th class="actions-column">Actions</th>
       </tr>
       </thead>
 
@@ -240,13 +238,139 @@
             <td>{{ job.customerFirstName }} {{ job.customerLastName }}</td>
             <td>{{ job.status }}</td>
             <td>${{ job.estimatedAmount }}</td>
-            <td>
+            <td class="actions-column">
               <button type="button" (click)="startEditJob(job)">
                 Edit
               </button>
-            </td>
-            <td>
               <button type="button" (click)="deleteJob(job.id)">
+                Delete
+              </button>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </section>
+
+  <section class="invoices">
+    <h2>Invoices</h2>
+
+    <section class="customer-form">
+      <h2>Add Invoice</h2>
+
+      <form (ngSubmit)="createInvoice()">
+        <select
+          name="invoiceJobId"
+          [(ngModel)]="newInvoice.jobId"
+          required
+        >
+          <option [ngValue]="0" disabled>Select job</option>
+
+          @for (job of jobs(); track job.id) {
+            <option [ngValue]="job.id">
+              {{ job.title }} — {{ job.customerFirstName }} {{ job.customerLastName }}
+            </option>
+          }
+        </select>
+
+        <input
+          type="number"
+          name="invoiceAmount"
+          placeholder="Amount"
+          [(ngModel)]="newInvoice.amount"
+          min="0.01"
+          step="0.01"
+          required
+        >
+
+        <select
+          name="invoiceStatus"
+          [(ngModel)]="newInvoice.status"
+        >
+          <option value="DRAFT">Draft</option>
+          <option value="SENT">Sent</option>
+        </select>
+
+        <button type="submit">Add Invoice</button>
+      </form>
+    </section>
+
+    @if (invoiceError()) {
+      <p class="error-message">{{ invoiceError() }}</p>
+    }
+
+    @if (editingInvoice) {
+      <section class="customer-form">
+        <h2>Edit Invoice</h2>
+
+        <form (ngSubmit)="saveInvoice()">
+          <p>
+            <strong>Job:</strong> {{ editingInvoice.jobTitle }}
+          </p>
+
+          <p>
+            <strong>Amount:</strong> ${{ editingInvoice.amount }}
+          </p>
+
+          <select
+            name="editInvoiceStatus"
+            [(ngModel)]="editingInvoice.status"
+          >
+            @if (editingInvoice.status === 'DRAFT') {
+              <option value="DRAFT">Draft</option>
+              <option value="SENT">Sent</option>
+              <option value="CANCELLED">Cancelled</option>
+            }
+
+            @if (editingInvoice.status === 'SENT') {
+              <option value="SENT">Sent</option>
+              <option value="CANCELLED">Cancelled</option>
+            }
+
+            @if (editingInvoice.status === 'PAID') {
+              <option value="PAID">Paid</option>
+            }
+
+            @if (editingInvoice.status === 'CANCELLED') {
+              <option value="CANCELLED">Cancelled</option>
+            }
+          </select>
+
+          <div>
+            <button type="submit">Save</button>
+            <button type="button" (click)="cancelEditInvoice()">Cancel</button>
+          </div>
+        </form>
+      </section>
+    }
+
+    <table>
+      <thead>
+      <tr>
+        <th>Job</th>
+        <th>Amount</th>
+        <th>Issued</th>
+        <th>Status</th>
+        <th>Paid</th>
+        <th class="actions-column">Actions</th>
+      </tr>
+      </thead>
+
+      <tbody>
+        @for (invoice of invoices(); track invoice.id) {
+          <tr>
+            <td>{{ invoice.jobTitle }}</td>
+            <td>${{ invoice.amount }}</td>
+            <td>{{ invoice.issuedDate }}</td>
+            <td>{{ invoice.status }}</td>
+            <td>{{ invoice.paidDate ?? '—' }}</td>
+            <td class="actions-column">
+              @if (invoice.status === 'DRAFT' || invoice.status === 'SENT') {
+                <button type="button" (click)="startEditInvoice(invoice)">
+                  Edit
+                </button>
+              }
+              <button type="button" (click)="deleteInvoice(invoice.id)">
                 Delete
               </button>
             </td>

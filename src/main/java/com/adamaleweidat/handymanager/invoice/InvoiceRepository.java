@@ -8,5 +8,7 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
 
     List<Invoice> findByJobId(Long id);
 
+    List<Invoice> findByJobIdAndStatus(Long id, InvoiceStatus status);
+
     boolean existsByJobId(Long jobId);
 }

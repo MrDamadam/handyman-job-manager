@@ -2,6 +2,7 @@ package com.adamaleweidat.handymanager.invoice;
 
 import com.adamaleweidat.handymanager.job.Job;
 import com.adamaleweidat.handymanager.job.JobService;
+import com.adamaleweidat.handymanager.payment.PaymentRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -12,10 +13,12 @@ public class InvoiceService {
 
     private final InvoiceRepository invoiceRepository;
     private final JobService jobService;
+    private final PaymentRepository paymentRepository;
 
-    public InvoiceService(InvoiceRepository invoiceRepository, JobService jobService) {
+    public InvoiceService(InvoiceRepository invoiceRepository, JobService jobService, PaymentRepository paymentRepository) {
         this.invoiceRepository = invoiceRepository;
         this.jobService = jobService;
+        this.paymentRepository = paymentRepository;
     }
 
     public Invoice getInvoice(Long id) {
@@ -38,33 +41,43 @@ public class InvoiceService {
 
     public Invoice updateInvoice(Long id, Invoice updatedInvoice) {
         Invoice existingInvoice = getInvoice(id);
-
-        existingInvoice.setAmount(updatedInvoice.getAmount());
-        existingInvoice.setStatus(updatedInvoice.getStatus());
-        existingInvoice.setPaidDate(updatedInvoice.getPaidDate());
-
+        InvoiceStatus currentStatus = existingInvoice.getStatus();
+        InvoiceStatus newStatus = updatedInvoice.getStatus();
+        if (currentStatus == InvoiceStatus.PAID) {
+            throw new IllegalStateException("Paid invoices cannot be modified");
+        }
+        if (currentStatus == InvoiceStatus.CANCELLED) {
+            throw new IllegalStateException("Cancelled invoices cannot be modified");
+        }
+        if (currentStatus == InvoiceStatus.SENT && newStatus == InvoiceStatus.DRAFT) {
+            throw new IllegalStateException("Sent invoices cannot be changed back to draft");
+        }
+        if (newStatus == InvoiceStatus.PAID) {
+            throw new IllegalStateException("Invoices can only be marked paid through payments");
+        }
+        existingInvoice.setStatus(newStatus);
         return invoiceRepository.save(existingInvoice);
     }
 
     public void deleteInvoice(Long id) {
         getInvoice(id);
+        if (paymentRepository.existsByInvoiceId(id)) {
+            throw new IllegalStateException("Invoice cannot be deleted because it has payments");
+        }
         invoiceRepository.deleteById(id);
     }
 
-    public Invoice markInvoiceSent(Long id) {
+    public void markInvoiceSent(Long id) {
         Invoice invoice = getInvoice(id);
-
         invoice.setStatus(InvoiceStatus.SENT);
         invoice.setPaidDate(null);
-
-        return  invoiceRepository.save(invoice);
+        invoiceRepository.save(invoice);
     }
-    public Invoice markInvoicePaid(Long id) {
-        Invoice invoice = getInvoice(id);
 
+    public void markInvoicePaid(Long id) {
+        Invoice invoice = getInvoice(id);
         invoice.setStatus(InvoiceStatus.PAID);
         invoice.setPaidDate(LocalDateTime.now());
-
-        return invoiceRepository.save(invoice);
+        invoiceRepository.save(invoice);
     }
 }

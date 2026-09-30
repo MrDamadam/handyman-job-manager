@@ -2,6 +2,7 @@ package com.adamaleweidat.handymanager.payment;
 
 import com.adamaleweidat.handymanager.invoice.Invoice;
 import com.adamaleweidat.handymanager.invoice.InvoiceService;
+import com.adamaleweidat.handymanager.invoice.InvoiceStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,41 +35,33 @@ public class PaymentService {
     @Transactional
     public Payment createPayment(Long invoiceId, Payment payment) {
         Invoice invoice = invoiceService.getInvoice(invoiceId);
+        if (invoice.getStatus() != InvoiceStatus.SENT) {
+            throw new IllegalArgumentException("Payments can only be added to sent invoices");
+        }
         payment.setInvoice(invoice);
-
         BigDecimal remainingBalance = getRemainingBalance(invoiceId);
         if (payment.getAmount().compareTo(remainingBalance) > 0) {
             throw new IllegalArgumentException("Payment exceeds remaining invoice balance");
         }
-
         Payment savedPayment = paymentRepository.save(payment);
-
         updateInvoicePaymentStatus(invoiceId);
-
         return savedPayment;
     }
 
     @Transactional
     public Payment updatePayment(Long id, Payment updatedPayment) {
         Payment existingPayment = getPayment(id);
-
         BigDecimal currentBalance = getRemainingBalance(existingPayment.getInvoice().getId());
         BigDecimal availableBalance = currentBalance.add(existingPayment.getAmount());
-
         if (updatedPayment.getAmount().compareTo(availableBalance) > 0) {
             throw new IllegalArgumentException("Payment exceeds remaining invoice balance");
         }
-
         existingPayment.setAmount(updatedPayment.getAmount());
         existingPayment.setPaymentDate(updatedPayment.getPaymentDate());
         existingPayment.setPaymentMethod(updatedPayment.getPaymentMethod());
-
         Long invoiceId = existingPayment.getInvoice().getId();
-
         Payment savedPayment = paymentRepository.save(existingPayment);
-
         updateInvoicePaymentStatus(invoiceId);
-
         return savedPayment;
     }
 
@@ -76,9 +69,8 @@ public class PaymentService {
     public void deletePayment(Long id) {
         Payment payment = getPayment(id);
         Long  invoiceId = payment.getInvoice().getId();
-
-        paymentRepository.deleteById(id);
-
+        paymentRepository.delete(payment);
+        paymentRepository.flush();
         updateInvoicePaymentStatus(invoiceId);
     }
 
@@ -94,7 +86,6 @@ public class PaymentService {
 
     private void updateInvoicePaymentStatus(Long invoiceId) {
         BigDecimal remainingBalance = getRemainingBalance(invoiceId);
-
         if (remainingBalance.compareTo(BigDecimal.ZERO) <= 0) {
             invoiceService.markInvoicePaid(invoiceId);
         } else {

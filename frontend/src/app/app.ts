@@ -7,6 +7,8 @@ import { Job } from './models/job';
 import { JobService } from './services/job.service';
 import { Invoice } from './models/invoice';
 import { InvoiceService } from './services/invoice.service';
+import { Payment } from './models/payment';
+import { PaymentService } from './services/payment.service';
 
 @Component({
   imports: [RouterOutlet, FormsModule],
@@ -21,6 +23,7 @@ export class App implements OnInit {
     private customerService: CustomerService,
     private jobService: JobService,
     private invoiceService: InvoiceService,
+    private paymentService: PaymentService,
   ) {}
 
   public customers = signal<Customer[]>([]);
@@ -28,6 +31,7 @@ export class App implements OnInit {
   public jobError = signal<string | null>(null);
   public invoices = signal<Invoice[]>([]);
   public invoiceError = signal<string | null>(null);
+  public payments = signal<Payment[]>([]);
 
   newCustomer = {
     firstName: '',
@@ -48,7 +52,13 @@ export class App implements OnInit {
     jobId: 0,
     amount: 0,
     status: 'DRAFT' as const,
-  }
+  };
+
+  newPayment = {
+    invoiceId: 0,
+    amount: 0,
+    paymentMethod: 'CASH' as const,
+  };
 
   ngOnInit(): void {
     this.customerService.getCustomers().subscribe((customers) => {
@@ -59,7 +69,10 @@ export class App implements OnInit {
     });
     this.invoiceService.getInvoices().subscribe((invoices) => {
       this.invoices.set(invoices);
-    })
+    });
+    this.paymentService.getPayments().subscribe((payments) => {
+      this.payments.set(payments);
+    });
   }
 
   deleteCustomer(id: number): void {
@@ -122,11 +135,11 @@ export class App implements OnInit {
     this.jobError.set(null);
     this.jobService.deleteJob(id).subscribe({
       next: () => {
-        this.jobs.update(jobs => jobs.filter(job => job.id !== id));
-        },
-      error: error => {
+        this.jobs.update((jobs) => jobs.filter((job) => job.id !== id));
+      },
+      error: (error) => {
         this.jobError.set(error.error?.error ?? 'Unable to delete job');
-        }
+      },
     });
   }
 
@@ -145,30 +158,32 @@ export class App implements OnInit {
     if (!this.editingJob) {
       return;
     }
-    this.jobService.updateJob(this.editingJob).subscribe(updatedJob => {
-      this.jobs.update(jobs => jobs.map(job => job.id === updatedJob.id ? updatedJob : job));
-      this.invoices.update(invoices => invoices.map(invoice => {
-        if (invoice.jobId !== updatedJob.id) {
-          return invoice;
-        }
-        return {
-          ...invoice,
-          jobTitle: updatedJob.title,
-          amount: invoice.status === 'DRAFT' ? updatedJob.estimatedAmount : invoice.amount,
-        };
-      }));
+    this.jobService.updateJob(this.editingJob).subscribe((updatedJob) => {
+      this.jobs.update((jobs) => jobs.map((job) => (job.id === updatedJob.id ? updatedJob : job)));
+      this.invoices.update((invoices) =>
+        invoices.map((invoice) => {
+          if (invoice.jobId !== updatedJob.id) {
+            return invoice;
+          }
+          return {
+            ...invoice,
+            jobTitle: updatedJob.title,
+            amount: invoice.status === 'DRAFT' ? updatedJob.estimatedAmount : invoice.amount,
+          };
+        }),
+      );
       this.editingJob = null;
     });
   }
 
   createInvoice(): void {
     const jobId = this.newInvoice.jobId;
-    this.invoiceService.createInvoice(jobId, this.newInvoice).subscribe(invoice => {
-      this.invoices.update(invoices => [...invoices, invoice]);
+    this.invoiceService.createInvoice(jobId, this.newInvoice).subscribe((invoice) => {
+      this.invoices.update((invoices) => [...invoices, invoice]);
       this.newInvoice = {
         jobId: 0,
         amount: 0,
-        status: 'DRAFT'
+        status: 'DRAFT',
       };
     });
   }
@@ -177,11 +192,11 @@ export class App implements OnInit {
     this.invoiceError.set(null);
     this.invoiceService.deleteInvoice(id).subscribe({
       next: () => {
-        this.invoices.update(invoices => invoices.filter(invoice => invoice.id !== id));
+        this.invoices.update((invoices) => invoices.filter((invoice) => invoice.id !== id));
       },
-      error: error => {
+      error: (error) => {
         this.invoiceError.set(error.error?.error ?? 'Unable to delete invoice');
-      }
+      },
     });
   }
 
@@ -200,9 +215,49 @@ export class App implements OnInit {
     if (!this.editingInvoice) {
       return;
     }
-    this.invoiceService.updateInvoice(this.editingInvoice).subscribe(updatedInvoice => {
-      this.invoices.update(invoices => invoices.map(invoice => invoice.id === updatedInvoice.id ? updatedInvoice : invoice));
+    this.invoiceService.updateInvoice(this.editingInvoice).subscribe((updatedInvoice) => {
+      this.invoices.update((invoices) =>
+        invoices.map((invoice) => (invoice.id === updatedInvoice.id ? updatedInvoice : invoice)),
+      );
       this.editingInvoice = null;
+    });
+  }
+
+  createPayment(): void {
+    const invoiceId = this.newPayment.invoiceId;
+    this.paymentService.createPayment(invoiceId, this.newPayment).subscribe((payment) => {
+      this.payments.update((payments) => [...payments, payment]);
+      this.invoiceService.getInvoice(payment.invoiceId).subscribe((updatedInvoice) => {
+        this.invoices.update((invoices) =>
+          invoices.map((invoice) => (invoice.id === updatedInvoice.id ? updatedInvoice : invoice)),
+        );
+      });
+      this.newPayment = {
+        invoiceId: 0,
+        amount: 0,
+        paymentMethod: 'CASH',
+      };
+    });
+  }
+
+  getRemainingBalance(invoice: Invoice): number {
+    const paid = this.payments()
+      .filter((payment) => payment.invoiceId === invoice.id)
+      .reduce((total, payment) => total + payment.amount, 0);
+    return invoice.amount - paid;
+  }
+
+  deletePayment(payment: Payment): void {
+    const invoiceId = payment.invoiceId;
+    this.paymentService.deletePayment(payment.id).subscribe(() => {
+      this.payments.update((payments) =>
+        payments.filter((existingPayment) => existingPayment.id !== payment.id),
+      );
+      this.invoiceService.getInvoice(invoiceId).subscribe((updatedInvoice) => {
+        this.invoices.update((invoices) =>
+          invoices.map((invoice) => (invoice.id === updatedInvoice.id ? updatedInvoice : invoice)),
+        );
+      });
     });
   }
 }

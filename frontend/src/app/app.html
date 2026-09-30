@@ -349,6 +349,7 @@
       <tr>
         <th>Job</th>
         <th>Amount</th>
+        <th>Balance</th>
         <th>Issued</th>
         <th>Status</th>
         <th>Paid</th>
@@ -361,6 +362,7 @@
           <tr>
             <td>{{ invoice.jobTitle }}</td>
             <td>${{ invoice.amount }}</td>
+            <td>${{ getRemainingBalance(invoice) }}</td>
             <td>{{ invoice.issuedDate }}</td>
             <td>{{ invoice.status }}</td>
             <td>{{ invoice.paidDate ?? '—' }}</td>
@@ -371,6 +373,83 @@
                 </button>
               }
               <button type="button" (click)="deleteInvoice(invoice.id)">
+                Delete
+              </button>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </section>
+
+  <section class="payments">
+    <h2>Payments</h2>
+
+    <section class="customer-form">
+      <h2>Add Payment</h2>
+
+      <form (ngSubmit)="createPayment()">
+        <select
+          name="paymentInvoiceId"
+          [(ngModel)]="newPayment.invoiceId"
+          required
+        >
+          <option [ngValue]="0" disabled>Select invoice</option>
+
+          @for (invoice of invoices(); track invoice.id) {
+            @if (invoice.status === 'SENT') {
+              <option [ngValue]="invoice.id">
+                Invoice #{{ invoice.id }} — {{ invoice.jobTitle }} — ${{ invoice.amount }}
+              </option>
+            }
+          }
+        </select>
+
+        <input
+          type="number"
+          name="paymentAmount"
+          placeholder="Payment amount"
+          [(ngModel)]="newPayment.amount"
+          min="0.01"
+          step="0.01"
+          required
+        >
+
+        <select
+          name="paymentMethod"
+          [(ngModel)]="newPayment.paymentMethod"
+        >
+          <option value="CASH">Cash</option>
+          <option value="CHECK">Check</option>
+          <option value="CREDIT_CARD">Credit Card</option>
+          <option value="BANK_TRANSFER">Bank Transfer</option>
+          <option value="OTHER">Other</option>
+        </select>
+
+        <button type="submit">Add Payment</button>
+      </form>
+    </section>
+
+    <table>
+      <thead>
+      <tr>
+        <th>Invoice</th>
+        <th>Amount</th>
+        <th>Date</th>
+        <th>Method</th>
+        <th class="actions-column">Actions</th>
+      </tr>
+      </thead>
+
+      <tbody>
+        @for (payment of payments(); track payment.id) {
+          <tr>
+            <td>#{{ payment.invoiceId }}</td>
+            <td>${{ payment.amount }}</td>
+            <td>{{ payment.paymentDate }}</td>
+            <td>{{ payment.paymentMethod }}</td>
+            <td class="actions-column">
+              <button type="button" (click)="deletePayment(payment)">
                 Delete
               </button>
             </td>

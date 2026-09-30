@@ -91,3 +91,11 @@ button {
 .actions-column button {
   margin: 0 4px;
 }
+
+.payments {
+  margin-top: 48px;
+}
+
+.payments h2 {
+  margin-bottom: 16px;
+}

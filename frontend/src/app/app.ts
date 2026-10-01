@@ -9,9 +9,10 @@ import { Invoice } from './models/invoice';
 import { InvoiceService } from './services/invoice.service';
 import { Payment } from './models/payment';
 import { PaymentService } from './services/payment.service';
+import { Customers } from './components/customers/customers';
 
 @Component({
-  imports: [RouterOutlet, FormsModule],
+  imports: [RouterOutlet, FormsModule, Customers],
   selector: 'app-root',
   styleUrl: './app.css',
   templateUrl: './app.html',
@@ -32,13 +33,6 @@ export class App implements OnInit {
   public invoices = signal<Invoice[]>([]);
   public invoiceError = signal<string | null>(null);
   public payments = signal<Payment[]>([]);
-
-  newCustomer = {
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
-  };
 
   newJob = {
     title: '',
@@ -81,39 +75,35 @@ export class App implements OnInit {
     });
   }
 
-  createCustomer(): void {
-    this.customerService.createCustomer(this.newCustomer).subscribe((customer) => {
-      this.customers.update((customers) => [...customers, customer]);
-      this.newCustomer = {
-        firstName: '',
-        lastName: '',
-        email: '',
-        phone: '',
-      };
+  createCustomerFromForm(customer: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+  }): void {
+    this.customerService.createCustomer(customer).subscribe((createdCustomer) => {
+      this.customers.update((customers) => [...customers, createdCustomer]);
     });
   }
 
-  editingCustomer: Customer | null = null;
-
-  startEdit(customer: Customer): void {
-    this.editingCustomer = { ...customer };
-  }
-
-  cancelEdit(): void {
-    this.editingCustomer = null;
-  }
-
-  saveCustomer(): void {
-    if (!this.editingCustomer) {
-      return;
-    }
-    this.customerService.updateCustomer(this.editingCustomer).subscribe((updatedCustomer) => {
+  saveCustomer(customer: Customer): void {
+    this.customerService.updateCustomer(customer).subscribe((updatedCustomer) => {
       this.customers.update((customers) =>
-        customers.map((customer) =>
-          customer.id === updatedCustomer.id ? updatedCustomer : customer,
+        customers.map((existingCustomer) =>
+          existingCustomer.id === updatedCustomer.id ? updatedCustomer : existingCustomer,
         ),
       );
-      this.editingCustomer = null;
+      this.jobs.update((jobs) =>
+        jobs.map((job) =>
+          job.customerId === updatedCustomer.id
+            ? {
+                ...job,
+                customerFirstName: updatedCustomer.firstName,
+                customerLastName: updatedCustomer.lastName,
+              }
+            : job,
+        ),
+      );
     });
   }
 

@@ -1,0 +1,130 @@
+<section class="customer-form">
+  <h2>Add Job</h2>
+
+  <form (ngSubmit)="submitNewJob()">
+    <select
+      name="customerId"
+      [(ngModel)]="newJob.customerId"
+      required
+    >
+      <option [ngValue]="0" disabled>Select customer</option>
+
+      @for (customer of customers(); track customer.id) {
+        <option [ngValue]="customer.id">
+          {{ customer.firstName }} {{ customer.lastName }}
+        </option>
+      }
+    </select>
+
+    <input
+      type="text"
+      name="jobTitle"
+      placeholder="Job title"
+      [(ngModel)]="newJob.title"
+      required
+    >
+
+    <input
+      type="text"
+      name="jobDescription"
+      placeholder="Description"
+      [(ngModel)]="newJob.description"
+    >
+
+    <input
+      type="number"
+      name="estimatedAmount"
+      placeholder="Estimated amount"
+      [(ngModel)]="newJob.estimatedAmount"
+      min="0"
+      step="0.01"
+      required
+    >
+
+    <button type="submit">Add Job</button>
+  </form>
+</section>
+
+@if (jobError()) {
+  <p class="error-message">{{ jobError() }}</p>
+}
+
+@if (editingJob) {
+  <section class="customer-form">
+    <h2>Edit Job</h2>
+
+    <form (ngSubmit)="saveJob()">
+      <input
+        type="text"
+        name="editJobTitle"
+        placeholder="Job title"
+        [(ngModel)]="editingJob.title"
+        required
+      >
+
+      <input
+        type="text"
+        name="editJobDescription"
+        placeholder="Description"
+        [(ngModel)]="editingJob.description"
+      >
+
+      <input
+        type="number"
+        name="editEstimatedAmount"
+        placeholder="Estimated amount"
+        [(ngModel)]="editingJob.estimatedAmount"
+        min="0"
+        step="0.01"
+        required
+      >
+
+      <select
+        name="editJobStatus"
+        [(ngModel)]="editingJob.status"
+      >
+        <option value="ESTIMATE">Estimate</option>
+        <option value="SCHEDULED">Scheduled</option>
+        <option value="IN_PROGRESS">In Progress</option>
+        <option value="COMPLETED">Completed</option>
+        <option value="CANCELLED">Cancelled</option>
+      </select>
+
+      <div>
+        <button type="submit">Save</button>
+        <button type="button" (click)="cancelEditJob()">Cancel</button>
+      </div>
+    </form>
+  </section>
+}
+
+<table>
+  <thead>
+  <tr>
+    <th>Job</th>
+    <th>Customer</th>
+    <th>Status</th>
+    <th>Estimate</th>
+    <th class="actions-column">Actions</th>
+  </tr>
+  </thead>
+
+  <tbody>
+    @for (job of jobs(); track job.id) {
+      <tr>
+        <td>{{ job.title }}</td>
+        <td>{{ job.customerFirstName }} {{ job.customerLastName }}</td>
+        <td>{{ job.status }}</td>
+        <td>${{ job.estimatedAmount }}</td>
+        <td class="actions-column">
+          <button type="button" (click)="startEditJob(job)">
+            Edit
+          </button>
+          <button type="button" (click)="deleteJob.emit(job.id)">
+            Delete
+          </button>
+        </td>
+      </tr>
+    }
+  </tbody>
+</table>

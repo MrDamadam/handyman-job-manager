@@ -10,9 +10,10 @@ import { InvoiceService } from './services/invoice.service';
 import { Payment } from './models/payment';
 import { PaymentService } from './services/payment.service';
 import { Customers } from './components/customers/customers';
+import { Jobs } from './components/jobs/jobs';
 
 @Component({
-  imports: [RouterOutlet, FormsModule, Customers],
+  imports: [RouterOutlet, FormsModule, Customers, Jobs],
   selector: 'app-root',
   styleUrl: './app.css',
   templateUrl: './app.html',
@@ -33,14 +34,6 @@ export class App implements OnInit {
   public invoices = signal<Invoice[]>([]);
   public invoiceError = signal<string | null>(null);
   public payments = signal<Payment[]>([]);
-
-  newJob = {
-    title: '',
-    description: '',
-    estimatedAmount: 0,
-    status: 'ESTIMATE' as const,
-    customerId: 0,
-  };
 
   newInvoice = {
     jobId: 0,
@@ -107,17 +100,16 @@ export class App implements OnInit {
     });
   }
 
-  createJob(): void {
-    const customerId = this.newJob.customerId;
-    this.jobService.createJob(customerId, this.newJob).subscribe((job) => {
-      this.jobs.update((jobs) => [...jobs, job]);
-      this.newJob = {
-        title: '',
-        description: '',
-        estimatedAmount: 0,
-        status: 'ESTIMATE',
-        customerId: 0,
-      };
+  createJobFromForm(job: {
+    title: string;
+    description: string;
+    estimatedAmount: number;
+    status: 'ESTIMATE';
+    customerId: number;
+  }): void {
+    const customerId = job.customerId;
+    this.jobService.createJob(customerId, job).subscribe((createdJob) => {
+      this.jobs.update((jobs) => [...jobs, createdJob]);
     });
   }
 
@@ -133,23 +125,11 @@ export class App implements OnInit {
     });
   }
 
-  editingJob: Job | null = null;
-
-  startEditJob(job: Job): void {
-    this.editingJob = { ...job };
-    this.jobError.set(null);
-  }
-
-  cancelEditJob(): void {
-    this.editingJob = null;
-  }
-
-  saveJob(): void {
-    if (!this.editingJob) {
-      return;
-    }
-    this.jobService.updateJob(this.editingJob).subscribe((updatedJob) => {
-      this.jobs.update((jobs) => jobs.map((job) => (job.id === updatedJob.id ? updatedJob : job)));
+  saveJob(job: Job): void {
+    this.jobService.updateJob(job).subscribe((updatedJob) => {
+      this.jobs.update((jobs) =>
+        jobs.map((existingJob) => (existingJob.id === updatedJob.id ? updatedJob : existingJob)),
+      );
       this.invoices.update((invoices) =>
         invoices.map((invoice) => {
           if (invoice.jobId !== updatedJob.id) {
@@ -162,7 +142,6 @@ export class App implements OnInit {
           };
         }),
       );
-      this.editingJob = null;
     });
   }
 

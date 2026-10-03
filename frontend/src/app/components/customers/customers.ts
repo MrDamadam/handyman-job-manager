@@ -1,6 +1,6 @@
 import { Component, input, output } from '@angular/core';
-import { Customer } from '../../models/customer';
 import { FormsModule } from '@angular/forms';
+import { Customer } from '../../models/customer';
 
 @Component({
   selector: 'app-customers',
@@ -20,29 +20,6 @@ export class Customers {
 
   createCustomer = output<typeof this.newCustomer>();
 
-  deleteCustomer = output<number>();
-
-  editingCustomer: Customer | null = null;
-
-  customerUpdated = output<Customer>();
-
-  startEdit(customer: Customer): void {
-    this.editingCustomer = { ...customer };
-  }
-
-  cancelEdit(): void {
-    this.editingCustomer = null;
-  }
-
-  saveCustomer(): void {
-    if (!this.editingCustomer) {
-      return;
-    }
-
-    this.customerUpdated.emit(this.editingCustomer);
-    this.editingCustomer = null;
-  }
-
   resetNewCustomer(): void {
     this.newCustomer = {
       firstName: '',
@@ -56,4 +33,26 @@ export class Customers {
     this.createCustomer.emit(this.newCustomer);
     this.resetNewCustomer();
   }
+
+  editingCustomer: Customer | null = null;
+
+  startEdit(customer: Customer): void {
+    this.editingCustomer = { ...customer };
+  }
+
+  cancelEdit(): void {
+    this.editingCustomer = null;
+  }
+
+  customerUpdated = output<Customer>();
+
+  saveCustomer(): void {
+    if (!this.editingCustomer) {
+      return;
+    }
+    this.customerUpdated.emit(this.editingCustomer);
+    this.editingCustomer = null;
+  }
+
+  deleteCustomer = output<number>();
 }

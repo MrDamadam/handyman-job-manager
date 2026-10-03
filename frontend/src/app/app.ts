@@ -1,33 +1,29 @@
 import { Component, OnInit, signal } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+
+import { FormsModule } from '@angular/forms';
+
 import { Customer } from './models/customer';
 import { CustomerService } from './services/customer.service';
-import { FormsModule } from '@angular/forms';
+import { Customers } from './components/customers/customers';
+
 import { Job } from './models/job';
 import { JobService } from './services/job.service';
-import { Invoice } from './models/invoice';
-import { InvoiceService } from './services/invoice.service';
-import { Payment } from './models/payment';
-import { PaymentService } from './services/payment.service';
-import { Customers } from './components/customers/customers';
 import { Jobs } from './components/jobs/jobs';
 
+import { Invoice } from './models/invoice';
+import { InvoiceService } from './services/invoice.service';
+import { Invoices } from './components/invoices/invoices';
+
+import { Payment } from './models/payment';
+import { PaymentService } from './services/payment.service';
+
 @Component({
-  imports: [RouterOutlet, FormsModule, Customers, Jobs],
+  imports: [FormsModule, Customers, Jobs, Invoices],
   selector: 'app-root',
   styleUrl: './app.css',
   templateUrl: './app.html',
 })
 export class App implements OnInit {
-  protected readonly title = signal('frontend');
-
-  constructor(
-    private customerService: CustomerService,
-    private jobService: JobService,
-    private invoiceService: InvoiceService,
-    private paymentService: PaymentService,
-  ) {}
-
   public customers = signal<Customer[]>([]);
   public jobs = signal<Job[]>([]);
   public jobError = signal<string | null>(null);
@@ -35,11 +31,12 @@ export class App implements OnInit {
   public invoiceError = signal<string | null>(null);
   public payments = signal<Payment[]>([]);
 
-  newInvoice = {
-    jobId: 0,
-    amount: 0,
-    status: 'DRAFT' as const,
-  };
+  constructor(
+    private customerService: CustomerService,
+    private jobService: JobService,
+    private invoiceService: InvoiceService,
+    private paymentService: PaymentService,
+  ) {}
 
   newPayment = {
     invoiceId: 0,
@@ -59,12 +56,6 @@ export class App implements OnInit {
     });
     this.paymentService.getPayments().subscribe((payments) => {
       this.payments.set(payments);
-    });
-  }
-
-  deleteCustomer(id: number): void {
-    this.customerService.deleteCustomer(id).subscribe(() => {
-      this.customers.update((customers) => customers.filter((customer) => customer.id !== id));
     });
   }
 
@@ -100,6 +91,12 @@ export class App implements OnInit {
     });
   }
 
+  deleteCustomer(id: number): void {
+    this.customerService.deleteCustomer(id).subscribe(() => {
+      this.customers.update((customers) => customers.filter((customer) => customer.id !== id));
+    });
+  }
+
   createJobFromForm(job: {
     title: string;
     description: string;
@@ -110,18 +107,6 @@ export class App implements OnInit {
     const customerId = job.customerId;
     this.jobService.createJob(customerId, job).subscribe((createdJob) => {
       this.jobs.update((jobs) => [...jobs, createdJob]);
-    });
-  }
-
-  deleteJob(id: number): void {
-    this.jobError.set(null);
-    this.jobService.deleteJob(id).subscribe({
-      next: () => {
-        this.jobs.update((jobs) => jobs.filter((job) => job.id !== id));
-      },
-      error: (error) => {
-        this.jobError.set(error.error?.error ?? 'Unable to delete job');
-      },
     });
   }
 
@@ -145,15 +130,33 @@ export class App implements OnInit {
     });
   }
 
-  createInvoice(): void {
-    const jobId = this.newInvoice.jobId;
-    this.invoiceService.createInvoice(jobId, this.newInvoice).subscribe((invoice) => {
-      this.invoices.update((invoices) => [...invoices, invoice]);
-      this.newInvoice = {
-        jobId: 0,
-        amount: 0,
-        status: 'DRAFT',
-      };
+  deleteJob(id: number): void {
+    this.jobError.set(null);
+    this.jobService.deleteJob(id).subscribe({
+      next: () => {
+        this.jobs.update((jobs) => jobs.filter((job) => job.id !== id));
+      },
+      error: (error) => {
+        this.jobError.set(error.error?.error ?? 'Unable to delete job');
+      },
+    });
+  }
+
+  createInvoiceFromForm(invoice: { jobId: number; amount: number; status: 'DRAFT' }): void {
+    const jobId = invoice.jobId;
+
+    this.invoiceService.createInvoice(jobId, invoice).subscribe((createdInvoice) => {
+      this.invoices.update((invoices) => [...invoices, createdInvoice]);
+    });
+  }
+
+  saveInvoice(invoice: Invoice): void {
+    this.invoiceService.updateInvoice(invoice).subscribe((updatedInvoice) => {
+      this.invoices.update((invoices) =>
+        invoices.map((existingInvoice) =>
+          existingInvoice.id === updatedInvoice.id ? updatedInvoice : existingInvoice,
+        ),
+      );
     });
   }
 
@@ -166,29 +169,6 @@ export class App implements OnInit {
       error: (error) => {
         this.invoiceError.set(error.error?.error ?? 'Unable to delete invoice');
       },
-    });
-  }
-
-  editingInvoice: Invoice | null = null;
-
-  startEditInvoice(invoice: Invoice): void {
-    this.editingInvoice = { ...invoice };
-    this.invoiceError.set(null);
-  }
-
-  cancelEditInvoice(): void {
-    this.editingInvoice = null;
-  }
-
-  saveInvoice(): void {
-    if (!this.editingInvoice) {
-      return;
-    }
-    this.invoiceService.updateInvoice(this.editingInvoice).subscribe((updatedInvoice) => {
-      this.invoices.update((invoices) =>
-        invoices.map((invoice) => (invoice.id === updatedInvoice.id ? updatedInvoice : invoice)),
-      );
-      this.editingInvoice = null;
     });
   }
 
@@ -207,13 +187,6 @@ export class App implements OnInit {
         paymentMethod: 'CASH',
       };
     });
-  }
-
-  getRemainingBalance(invoice: Invoice): number {
-    const paid = this.payments()
-      .filter((payment) => payment.invoiceId === invoice.id)
-      .reduce((total, payment) => total + payment.amount, 0);
-    return invoice.amount - paid;
   }
 
   deletePayment(payment: Payment): void {

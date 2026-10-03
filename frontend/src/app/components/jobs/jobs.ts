@@ -12,12 +12,7 @@ import { Job } from '../../models/job';
 export class Jobs {
   customers = input.required<Customer[]>();
   jobs = input.required<Job[]>();
-
   jobError = input<string | null>(null);
-
-  editingJob: Job | null = null;
-
-  jobUpdated = output<Job>();
 
   newJob = {
     title: '',
@@ -28,11 +23,9 @@ export class Jobs {
   };
 
   createJob = output<typeof this.newJob>();
-  deleteJob = output<number>();
 
   submitNewJob(): void {
     this.createJob.emit(this.newJob);
-
     this.newJob = {
       title: '',
       description: '',
@@ -42,6 +35,8 @@ export class Jobs {
     };
   }
 
+  editingJob: Job | null = null;
+
   startEditJob(job: Job): void {
     this.editingJob = { ...job };
   }
@@ -50,12 +45,15 @@ export class Jobs {
     this.editingJob = null;
   }
 
+  jobUpdated = output<Job>();
+
   saveJob(): void {
     if (!this.editingJob) {
       return;
     }
-
     this.jobUpdated.emit(this.editingJob);
     this.editingJob = null;
   }
+
+  deleteJob = output<number>();
 }

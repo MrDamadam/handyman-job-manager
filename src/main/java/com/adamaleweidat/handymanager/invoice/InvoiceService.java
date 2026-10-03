@@ -34,6 +34,10 @@ public class InvoiceService {
     }
 
     public Invoice createInvoice(Long jobId, Invoice invoice) {
+        if (invoice.getStatus() != InvoiceStatus.DRAFT && invoice.getStatus() != InvoiceStatus.SENT) {
+            throw new IllegalArgumentException("New invoices must be draft or sent; paid status is determined by payments");
+        }
+        invoice.setPaidDate(null);
         Job job = jobService.getJob(jobId);
         invoice.setJob(job);
         return invoiceRepository.save(invoice);
@@ -55,6 +59,12 @@ public class InvoiceService {
         if (newStatus == InvoiceStatus.PAID) {
             throw new IllegalStateException("Invoices can only be marked paid through payments");
         }
+        if (newStatus == null) {
+            throw new IllegalArgumentException("Invoice status is required");
+        }
+        if (newStatus == InvoiceStatus.CANCELLED && paymentRepository.existsByInvoiceId(id)) {
+            throw new IllegalStateException("Invoice cannot be cancelled because it has payments");
+        }
         existingInvoice.setStatus(newStatus);
         return invoiceRepository.save(existingInvoice);
     }
@@ -69,6 +79,7 @@ public class InvoiceService {
 
     public void markInvoiceSent(Long id) {
         Invoice invoice = getInvoice(id);
+        requirePaymentStatusChangeAllowed(invoice);
         invoice.setStatus(InvoiceStatus.SENT);
         invoice.setPaidDate(null);
         invoiceRepository.save(invoice);
@@ -76,8 +87,16 @@ public class InvoiceService {
 
     public void markInvoicePaid(Long id) {
         Invoice invoice = getInvoice(id);
+        requirePaymentStatusChangeAllowed(invoice);
+        if (invoice.getStatus() != InvoiceStatus.PAID) {
+            invoice.setPaidDate(LocalDateTime.now());
+        }
         invoice.setStatus(InvoiceStatus.PAID);
-        invoice.setPaidDate(LocalDateTime.now());
         invoiceRepository.save(invoice);
+    }
+    private void requirePaymentStatusChangeAllowed(Invoice invoice) {
+        if (invoice.getStatus() != InvoiceStatus.SENT && invoice.getStatus() != InvoiceStatus.PAID) {
+            throw new IllegalStateException("Payments cannot change the status of draft or cancelled invoices");
+        }
     }
 }

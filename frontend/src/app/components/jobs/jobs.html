@@ -1,8 +1,9 @@
 <section class="customer-form">
-  <h2>Add Job</h2>
+  <h3>Add Job</h3>
 
-  <form (ngSubmit)="submitNewJob()">
-    <select
+  <form (ngSubmit)="submitNewJob()" [attr.aria-busy]="createState.pending()">
+    <fieldset [disabled]="createState.pending()">
+    <label class="form-field"><span>Customer</span><select
       name="customerId"
       [(ngModel)]="newJob.customerId"
       required
@@ -14,24 +15,24 @@
           {{ customer.firstName }} {{ customer.lastName }}
         </option>
       }
-    </select>
+    </select></label>
 
-    <input
+    <label class="form-field"><span>Job title</span><input
       type="text"
       name="jobTitle"
       placeholder="Job title"
       [(ngModel)]="newJob.title"
       required
-    >
+    ></label>
 
-    <input
+    <label class="form-field"><span>Description</span><input
       type="text"
       name="jobDescription"
       placeholder="Description"
       [(ngModel)]="newJob.description"
-    >
+    ></label>
 
-    <input
+    <label class="form-field"><span>Estimated amount ($)</span><input
       type="number"
       name="estimatedAmount"
       placeholder="Estimated amount"
@@ -39,9 +40,12 @@
       min="0"
       step="0.01"
       required
-    >
+    ></label>
 
-    <button type="submit">Add Job</button>
+    <button type="submit">{{ createState.pending() ? 'Saving…' : 'Add Job' }}</button>
+  </fieldset>
+    @if (createState.error()) {<p class="error-message" role="alert">{{ createState.error() }}</p>}
+    @if (createState.saved()) {<p class="save-success" role="status">Saved successfully.</p>}
   </form>
 </section>
 
@@ -51,25 +55,26 @@
 
 @if (editingJob) {
   <section class="customer-form">
-    <h2>Edit Job</h2>
+    <h3>Edit Job</h3>
 
-    <form (ngSubmit)="saveJob()">
-      <input
+    <form (ngSubmit)="saveJob()" [attr.aria-busy]="editState.pending()">
+    <fieldset [disabled]="editState.pending()">
+      <label class="form-field"><span>Job title</span><input
         type="text"
         name="editJobTitle"
         placeholder="Job title"
         [(ngModel)]="editingJob.title"
         required
-      >
+      ></label>
 
-      <input
+      <label class="form-field"><span>Description</span><input
         type="text"
         name="editJobDescription"
         placeholder="Description"
         [(ngModel)]="editingJob.description"
-      >
+      ></label>
 
-      <input
+      <label class="form-field"><span>Estimated amount ($)</span><input
         type="number"
         name="editEstimatedAmount"
         placeholder="Estimated amount"
@@ -77,9 +82,9 @@
         min="0"
         step="0.01"
         required
-      >
+      ></label>
 
-      <select
+      <label class="form-field"><span>Status</span><select
         name="editJobStatus"
         [(ngModel)]="editingJob.status"
       >
@@ -88,17 +93,20 @@
         <option value="IN_PROGRESS">In Progress</option>
         <option value="COMPLETED">Completed</option>
         <option value="CANCELLED">Cancelled</option>
-      </select>
+      </select></label>
 
       <div>
-        <button type="submit">Save</button>
+        <button type="submit">{{ editState.pending() ? 'Saving…' : 'Save' }}</button>
         <button type="button" (click)="cancelEditJob()">Cancel</button>
       </div>
-    </form>
+    </fieldset>
+    @if (editState.error()) {<p class="error-message" role="alert">{{ editState.error() }}</p>}
+    @if (editState.saved()) {<p class="save-success" role="status">Saved successfully.</p>}
+  </form>
   </section>
 }
 
-<table>
+<div class="table-scroll" role="region" aria-label="jobs table" tabindex="0"><table>
   <thead>
   <tr>
     <th>Job</th>
@@ -117,14 +125,13 @@
         <td>{{ job.status }}</td>
         <td>${{ job.estimatedAmount }}</td>
         <td class="actions-column">
-          <button type="button" (click)="startEditJob(job)">
+          <button type="button" [disabled]="editState.pending()" (click)="startEditJob(job)">
             Edit
           </button>
-          <button type="button" (click)="deleteJob.emit(job.id)">
+          <button type="button" class="danger" (click)="deleteJob.emit(job.id)">
             Delete
           </button>
         </td>
       </tr>
-    }
-  </tbody>
-</table>
+    } @empty {<tr><td class="empty-state" colspan="5">No jobs yet.</td></tr>} </tbody>
+</table></div>

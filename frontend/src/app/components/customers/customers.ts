@@ -1,3 +1,4 @@
+import { SaveRequest, SaveState } from '../../shared/save-state';
 import { Component, input, output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Customer } from '../../models/customer';
@@ -9,6 +10,9 @@ import { Customer } from '../../models/customer';
   styleUrl: './customers.css',
 })
 export class Customers {
+  readonly createState = new SaveState();
+  readonly editState = new SaveState();
+
   customers = input.required<Customer[]>();
 
   newCustomer = {
@@ -18,7 +22,7 @@ export class Customers {
     phone: '',
   };
 
-  createCustomer = output<typeof this.newCustomer>();
+  createCustomer = output<SaveRequest<typeof this.newCustomer>>();
 
   resetNewCustomer(): void {
     this.newCustomer = {
@@ -30,8 +34,9 @@ export class Customers {
   }
 
   submitNewCustomer(): void {
-    this.createCustomer.emit(this.newCustomer);
+    this.createState.submit({ ...this.newCustomer }, this.createCustomer, () => {
     this.resetNewCustomer();
+    });
   }
 
   editingCustomer: Customer | null = null;
@@ -44,14 +49,15 @@ export class Customers {
     this.editingCustomer = null;
   }
 
-  customerUpdated = output<Customer>();
+  customerUpdated = output<SaveRequest<Customer>>();
 
   saveCustomer(): void {
     if (!this.editingCustomer) {
       return;
     }
-    this.customerUpdated.emit(this.editingCustomer);
-    this.editingCustomer = null;
+    this.editState.submit({ ...this.editingCustomer }, this.customerUpdated, () => {
+      this.editingCustomer = null;
+    });
   }
 
   deleteCustomer = output<number>();

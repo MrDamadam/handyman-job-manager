@@ -1,89 +1,97 @@
 <section class="customer-form">
-  <h2>Add Customer</h2>
+  <h3>Add Customer</h3>
 
-  <form (ngSubmit)="submitNewCustomer()">
-    <input
+  <form (ngSubmit)="submitNewCustomer()" [attr.aria-busy]="createState.pending()">
+    <fieldset [disabled]="createState.pending()">
+    <label class="form-field"><span>First name</span><input
       type="text"
       name="firstName"
       placeholder="First name"
       [(ngModel)]="newCustomer.firstName"
       required
-    >
+    ></label>
 
-    <input
+    <label class="form-field"><span>Last name</span><input
       type="text"
       name="lastName"
       placeholder="Last name"
       [(ngModel)]="newCustomer.lastName"
       required
-    >
+    ></label>
 
-    <input
+    <label class="form-field"><span>Email</span><input
       type="email"
       name="email"
       placeholder="Email"
       [(ngModel)]="newCustomer.email"
       required
-    >
+    ></label>
 
-    <input
+    <label class="form-field"><span>Phone</span><input
       type="text"
       name="phone"
       placeholder="Phone"
       [(ngModel)]="newCustomer.phone"
-    >
+    ></label>
 
-    <button type="submit">Add Customer</button>
+    <button type="submit">{{ createState.pending() ? 'Saving…' : 'Add Customer' }}</button>
+  </fieldset>
+    @if (createState.error()) {<p class="error-message" role="alert">{{ createState.error() }}</p>}
+    @if (createState.saved()) {<p class="save-success" role="status">Saved successfully.</p>}
   </form>
 </section>
 
 @if (editingCustomer) {
   <section class="customer-form">
-    <h2>Edit Customer</h2>
+    <h3>Edit Customer</h3>
 
-    <form (ngSubmit)="saveCustomer()">
-      <input
+    <form (ngSubmit)="saveCustomer()" [attr.aria-busy]="editState.pending()">
+    <fieldset [disabled]="editState.pending()">
+      <label class="form-field"><span>First name</span><input
         type="text"
         name="editFirstName"
         placeholder="First name"
         [(ngModel)]="editingCustomer.firstName"
         required
-      >
+      ></label>
 
-      <input
+      <label class="form-field"><span>Last name</span><input
         type="text"
         name="editLastName"
         placeholder="Last name"
         [(ngModel)]="editingCustomer.lastName"
         required
-      >
+      ></label>
 
-      <input
+      <label class="form-field"><span>Email</span><input
         type="email"
         name="editEmail"
         placeholder="Email"
         [(ngModel)]="editingCustomer.email"
         required
-      >
+      ></label>
 
-      <input
+      <label class="form-field"><span>Phone</span><input
         type="text"
         name="editPhone"
         placeholder="Phone"
         [(ngModel)]="editingCustomer.phone"
-      >
+      ></label>
 
       <div>
-        <button type="submit">Save</button>
+        <button type="submit">{{ editState.pending() ? 'Saving…' : 'Save' }}</button>
         <button type="button" (click)="cancelEdit()">
           Cancel
         </button>
       </div>
-    </form>
+    </fieldset>
+    @if (editState.error()) {<p class="error-message" role="alert">{{ editState.error() }}</p>}
+    @if (editState.saved()) {<p class="save-success" role="status">Saved successfully.</p>}
+  </form>
   </section>
 }
 
-<table>
+<div class="table-scroll" role="region" aria-label="customers table" tabindex="0"><table>
   <thead>
   <tr>
     <th>Name</th>
@@ -100,14 +108,13 @@
         <td>{{ customer.email }}</td>
         <td>{{ customer.phone }}</td>
         <td class="actions-column">
-          <button type="button" (click)="startEdit(customer)">
+          <button type="button" [disabled]="editState.pending()" (click)="startEdit(customer)">
             Edit
           </button>
-          <button type="button" (click)="deleteCustomer.emit(customer.id)">
+          <button type="button" class="danger" (click)="deleteCustomer.emit(customer.id)">
             Delete
           </button>
         </td>
       </tr>
-    }
-  </tbody>
-</table>
+    } @empty {<tr><td class="empty-state" colspan="4">No customers yet.</td></tr>} </tbody>
+</table></div>

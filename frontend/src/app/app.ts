@@ -1,3 +1,4 @@
+import { SaveRequest, settleSave } from './shared/save-state';
 import { Component, OnInit, signal } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
@@ -16,20 +17,24 @@ import { Invoices } from './components/invoices/invoices';
 
 import { Payment } from './models/payment';
 import { PaymentService } from './services/payment.service';
+import { Payments } from './components/payments/payments';
 
 @Component({
-  imports: [FormsModule, Customers, Jobs, Invoices],
+  imports: [FormsModule, Customers, Jobs, Invoices, Payments],
   selector: 'app-root',
   styleUrl: './app.css',
   templateUrl: './app.html',
 })
 export class App implements OnInit {
+
   public customers = signal<Customer[]>([]);
   public jobs = signal<Job[]>([]);
-  public jobError = signal<string | null>(null);
   public invoices = signal<Invoice[]>([]);
-  public invoiceError = signal<string | null>(null);
   public payments = signal<Payment[]>([]);
+
+  public jobError = signal<string | null>(null);
+  public invoiceError = signal<string | null>(null);
+  public paymentError = signal<string | null>(null);
 
   constructor(
     private customerService: CustomerService,
@@ -37,12 +42,6 @@ export class App implements OnInit {
     private invoiceService: InvoiceService,
     private paymentService: PaymentService,
   ) {}
-
-  newPayment = {
-    invoiceId: 0,
-    amount: 0,
-    paymentMethod: 'CASH' as const,
-  };
 
   ngOnInit(): void {
     this.customerService.getCustomers().subscribe((customers) => {
@@ -59,19 +58,21 @@ export class App implements OnInit {
     });
   }
 
-  createCustomerFromForm(customer: {
+  createCustomerFromForm(request: SaveRequest<{
     firstName: string;
     lastName: string;
     email: string;
     phone: string;
-  }): void {
-    this.customerService.createCustomer(customer).subscribe((createdCustomer) => {
+  }>): void {
+    const customer = request.value;
+    this.customerService.createCustomer(customer).pipe(settleSave(request)).subscribe((createdCustomer) => {
       this.customers.update((customers) => [...customers, createdCustomer]);
     });
   }
 
-  saveCustomer(customer: Customer): void {
-    this.customerService.updateCustomer(customer).subscribe((updatedCustomer) => {
+  saveCustomer(request: SaveRequest<Customer>): void {
+    const customer = request.value;
+    this.customerService.updateCustomer(customer).pipe(settleSave(request)).subscribe((updatedCustomer) => {
       this.customers.update((customers) =>
         customers.map((existingCustomer) =>
           existingCustomer.id === updatedCustomer.id ? updatedCustomer : existingCustomer,
@@ -97,21 +98,23 @@ export class App implements OnInit {
     });
   }
 
-  createJobFromForm(job: {
+  createJobFromForm(request: SaveRequest<{
     title: string;
     description: string;
     estimatedAmount: number;
     status: 'ESTIMATE';
     customerId: number;
-  }): void {
+  }>): void {
+    const job = request.value;
     const customerId = job.customerId;
-    this.jobService.createJob(customerId, job).subscribe((createdJob) => {
+    this.jobService.createJob(customerId, job).pipe(settleSave(request)).subscribe((createdJob) => {
       this.jobs.update((jobs) => [...jobs, createdJob]);
     });
   }
 
-  saveJob(job: Job): void {
-    this.jobService.updateJob(job).subscribe((updatedJob) => {
+  saveJob(request: SaveRequest<Job>): void {
+    const job = request.value;
+    this.jobService.updateJob(job).pipe(settleSave(request)).subscribe((updatedJob) => {
       this.jobs.update((jobs) =>
         jobs.map((existingJob) => (existingJob.id === updatedJob.id ? updatedJob : existingJob)),
       );
@@ -142,16 +145,18 @@ export class App implements OnInit {
     });
   }
 
-  createInvoiceFromForm(invoice: { jobId: number; amount: number; status: 'DRAFT' }): void {
+  createInvoiceFromForm(request: SaveRequest<{ jobId: number; amount: number; status: 'DRAFT' }>): void {
+    const invoice = request.value;
     const jobId = invoice.jobId;
 
-    this.invoiceService.createInvoice(jobId, invoice).subscribe((createdInvoice) => {
+    this.invoiceService.createInvoice(jobId, invoice).pipe(settleSave(request)).subscribe((createdInvoice) => {
       this.invoices.update((invoices) => [...invoices, createdInvoice]);
     });
   }
 
-  saveInvoice(invoice: Invoice): void {
-    this.invoiceService.updateInvoice(invoice).subscribe((updatedInvoice) => {
+  saveInvoice(request: SaveRequest<Invoice>): void {
+    const invoice = request.value;
+    this.invoiceService.updateInvoice(invoice).pipe(settleSave(request)).subscribe((updatedInvoice) => {
       this.invoices.update((invoices) =>
         invoices.map((existingInvoice) =>
           existingInvoice.id === updatedInvoice.id ? updatedInvoice : existingInvoice,
@@ -172,34 +177,42 @@ export class App implements OnInit {
     });
   }
 
-  createPayment(): void {
-    const invoiceId = this.newPayment.invoiceId;
-    this.paymentService.createPayment(invoiceId, this.newPayment).subscribe((payment) => {
-      this.payments.update((payments) => [...payments, payment]);
-      this.invoiceService.getInvoice(payment.invoiceId).subscribe((updatedInvoice) => {
+  createPaymentFromForm(request: SaveRequest<{
+    invoiceId: number;
+    amount: number;
+    paymentMethod: 'CASH';
+  }>): void {
+    const payment = request.value;
+    this.paymentError.set(null);
+    const invoiceId = payment.invoiceId;
+    this.paymentService.createPayment(invoiceId, payment).pipe(settleSave(request)).subscribe((createdPayment) => {
+      this.payments.update((payments) => [...payments, createdPayment]);
+      this.invoiceService.getInvoice(createdPayment.invoiceId).subscribe({ next: (updatedInvoice) => {
         this.invoices.update((invoices) =>
           invoices.map((invoice) => (invoice.id === updatedInvoice.id ? updatedInvoice : invoice)),
         );
-      });
-      this.newPayment = {
-        invoiceId: 0,
-        amount: 0,
-        paymentMethod: 'CASH',
-      };
+      }, error: () => this.paymentError.set('Payment saved, but invoice details could not refresh. Reload the page; do not submit the payment again.') });
     });
   }
 
   deletePayment(payment: Payment): void {
+    this.paymentError.set(null);
     const invoiceId = payment.invoiceId;
-    this.paymentService.deletePayment(payment.id).subscribe(() => {
-      this.payments.update((payments) =>
-        payments.filter((existingPayment) => existingPayment.id !== payment.id),
-      );
-      this.invoiceService.getInvoice(invoiceId).subscribe((updatedInvoice) => {
-        this.invoices.update((invoices) =>
-          invoices.map((invoice) => (invoice.id === updatedInvoice.id ? updatedInvoice : invoice)),
+    this.paymentService.deletePayment(payment.id).subscribe({
+      next: () => {
+        this.payments.update((payments) =>
+          payments.filter((existingPayment) => existingPayment.id !== payment.id),
         );
-      });
+        this.invoiceService.getInvoice(invoiceId).subscribe({
+          next: (updatedInvoice) => {
+            this.invoices.update((invoices) =>
+              invoices.map((invoice) => invoice.id === updatedInvoice.id ? updatedInvoice : invoice),
+            );
+          },
+          error: () => this.paymentError.set('Payment deleted, but invoice details could not refresh. Reload the page.'),
+        });
+      },
+      error: (error) => this.paymentError.set(error.error?.error ?? 'Unable to delete payment. Please try again.'),
     });
   }
 }

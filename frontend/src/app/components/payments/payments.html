@@ -1,0 +1,78 @@
+<section class="customer-form">
+  <h3>Add Payment</h3>
+
+  <form (ngSubmit)="submitNewPayment()" [attr.aria-busy]="createState.pending()">
+    <fieldset [disabled]="createState.pending()">
+    <label class="form-field"><span>Invoice</span><select
+      name="paymentInvoiceId"
+      [(ngModel)]="newPayment.invoiceId"
+      required
+    >
+      <option [ngValue]="0" disabled>Select invoice</option>
+
+      @for (invoice of invoices(); track invoice.id) {
+        @if (invoice.status === 'SENT') {
+          <option [ngValue]="invoice.id">
+            Invoice #{{ invoice.id }} — {{ invoice.jobTitle }} — ${{ invoice.amount }}
+          </option>
+        }
+      }
+    </select></label>
+
+    <label class="form-field"><span>Payment amount ($)</span><input
+      type="number"
+      name="paymentAmount"
+      placeholder="Payment amount"
+      [(ngModel)]="newPayment.amount"
+      min="0.01"
+      step="0.01"
+      required
+    ></label>
+
+    <label class="form-field"><span>Payment method</span><select
+      name="paymentMethod"
+      [(ngModel)]="newPayment.paymentMethod"
+    >
+      <option value="CASH">Cash</option>
+      <option value="CHECK">Check</option>
+      <option value="CREDIT_CARD">Credit Card</option>
+      <option value="BANK_TRANSFER">Bank Transfer</option>
+      <option value="OTHER">Other</option>
+    </select></label>
+
+    <button type="submit">{{ createState.pending() ? 'Saving…' : 'Add Payment' }}</button>
+  </fieldset>
+    @if (createState.error()) {<p class="error-message" role="alert">{{ createState.error() }}</p>}
+    @if (createState.saved()) {<p class="save-success" role="status">Saved successfully.</p>}
+  </form>
+</section>
+
+<div class="table-scroll" role="region" aria-label="payments table" tabindex="0"><table>
+  <thead>
+  <tr>
+    <th>Invoice</th>
+    <th>Amount</th>
+    <th>Date</th>
+    <th>Method</th>
+    <th class="actions-column">Actions</th>
+  </tr>
+  </thead>
+
+  <tbody>
+    @for (payment of payments(); track payment.id) {
+      <tr>
+        <td>#{{ payment.invoiceId }}</td>
+        <td>${{ payment.amount }}</td>
+        <td>{{ payment.paymentDate }}</td>
+        <td>{{ payment.paymentMethod }}</td>
+        <td class="actions-column">
+          <button type="button" class="danger" (click)="deletePayment.emit(payment)">
+            Delete
+          </button>
+        </td>
+      </tr>
+    } @empty {<tr><td class="empty-state" colspan="5">No payments yet.</td></tr>} </tbody>
+</table></div>
+
+
+@if (paymentError()) {<p class="error-message" role="alert">{{ paymentError() }}</p>}

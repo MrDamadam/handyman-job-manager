@@ -51,6 +51,10 @@ public class PaymentService {
     @Transactional
     public Payment updatePayment(Long id, Payment updatedPayment) {
         Payment existingPayment = getPayment(id);
+        InvoiceStatus status = existingPayment.getInvoice().getStatus();
+        if (status != InvoiceStatus.SENT && status != InvoiceStatus.PAID) {
+            throw new IllegalStateException("Payments on draft or cancelled invoices cannot be edited");
+        }
         BigDecimal currentBalance = getRemainingBalance(existingPayment.getInvoice().getId());
         BigDecimal availableBalance = currentBalance.add(existingPayment.getAmount());
         if (updatedPayment.getAmount().compareTo(availableBalance) > 0) {
@@ -85,6 +89,11 @@ public class PaymentService {
     }
 
     private void updateInvoicePaymentStatus(Long invoiceId) {
+        // Legacy cancelled invoices may still have payments that need removing.
+        // Removing one must never change the invoice's lifecycle state.
+        if (invoiceService.getInvoice(invoiceId).getStatus() == InvoiceStatus.CANCELLED) {
+            return;
+        }
         BigDecimal remainingBalance = getRemainingBalance(invoiceId);
         if (remainingBalance.compareTo(BigDecimal.ZERO) <= 0) {
             invoiceService.markInvoicePaid(invoiceId);

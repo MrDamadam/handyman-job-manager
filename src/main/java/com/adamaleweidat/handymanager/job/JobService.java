@@ -57,7 +57,7 @@ public class JobService {
     public void deleteJob(Long id) {
         getJob(id);
 
-        if (invoiceRepository.existsById(id)) {
+        if (invoiceRepository.existsByJobId(id)) {
             throw new IllegalStateException("Job cannot be deleted because it has invoices");
         }
 

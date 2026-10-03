@@ -1,3 +1,4 @@
+import { SaveRequest, SaveState } from '../../shared/save-state';
 import { Component, input, output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Job } from '../../models/job';
@@ -11,9 +12,13 @@ import { Payment } from '../../models/payment';
   styleUrl: './invoices.css',
 })
 export class Invoices {
+  readonly createState = new SaveState();
+  readonly editState = new SaveState();
+
   invoices = input.required<Invoice[]>();
   jobs = input.required<Job[]>();
   payments = input.required<Payment[]>();
+
   invoiceError = input<string | null>(null);
 
   newInvoice = {
@@ -22,15 +27,16 @@ export class Invoices {
     status: 'DRAFT' as const,
   };
 
-  createInvoice = output<typeof this.newInvoice>();
+  createInvoice = output<SaveRequest<typeof this.newInvoice>>();
 
   submitNewInvoice(): void {
-    this.createInvoice.emit(this.newInvoice);
+    this.createState.submit({ ...this.newInvoice }, this.createInvoice, () => {
     this.newInvoice = {
       jobId: 0,
       amount: 0,
       status: 'DRAFT',
     };
+    });
   }
 
   editingInvoice: Invoice | null = null;
@@ -43,14 +49,15 @@ export class Invoices {
     this.editingInvoice = null;
   }
 
-  invoiceUpdated = output<Invoice>();
+  invoiceUpdated = output<SaveRequest<Invoice>>();
 
   saveInvoice(): void {
     if (!this.editingInvoice) {
       return;
     }
-    this.invoiceUpdated.emit(this.editingInvoice);
-    this.editingInvoice = null;
+    this.editState.submit({ ...this.editingInvoice }, this.invoiceUpdated, () => {
+      this.editingInvoice = null;
+    });
   }
 
   deleteInvoice = output<number>();

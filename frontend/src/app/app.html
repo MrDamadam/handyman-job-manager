@@ -5,6 +5,7 @@
     <h2>Customers</h2>
     <app-customers
       [customers]="customers()"
+      [customerError]="customerError()"
       (createCustomer)="createCustomerFromForm($event)"
       (customerUpdated)="saveCustomer($event)"
       (deleteCustomer)="deleteCustomer($event)"

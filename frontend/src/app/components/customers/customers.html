@@ -41,6 +41,10 @@
   </form>
 </section>
 
+@if (customerError()) {
+  <p class="error-message" role="alert">{{ customerError() }}</p>
+}
+
 @if (editingCustomer) {
   <section class="customer-form">
     <h3>Edit Customer</h3>

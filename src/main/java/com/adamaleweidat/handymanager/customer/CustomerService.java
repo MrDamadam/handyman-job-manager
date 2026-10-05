@@ -1,5 +1,6 @@
 package com.adamaleweidat.handymanager.customer;
 
+import com.adamaleweidat.handymanager.job.JobRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -8,9 +9,11 @@ import java.util.List;
 public class CustomerService {
 
     private final CustomerRepository customerRepository;
+    private final JobRepository jobRepository;
 
-    public CustomerService(CustomerRepository customerRepository) {
+    public CustomerService(CustomerRepository customerRepository, JobRepository jobRepository) {
         this.customerRepository = customerRepository;
+        this.jobRepository = jobRepository;
     }
 
     public Customer createCustomer(Customer customer) {
@@ -36,6 +39,9 @@ public class CustomerService {
 
     public void deleteCustomer(Long id) {
         getCustomer(id);
+        if (jobRepository.existsByCustomerId(id)) {
+            throw new IllegalStateException("Customer cannot be deleted because they have jobs");
+        }
         customerRepository.deleteById(id);
     }
 }

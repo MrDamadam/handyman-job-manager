@@ -15,6 +15,8 @@ export class Customers {
 
   customers = input.required<Customer[]>();
 
+  customerError = input<string | null>(null);
+
   newCustomer = {
     firstName: '',
     lastName: '',
@@ -35,7 +37,7 @@ export class Customers {
 
   submitNewCustomer(): void {
     this.createState.submit({ ...this.newCustomer }, this.createCustomer, () => {
-    this.resetNewCustomer();
+      this.resetNewCustomer();
     });
   }
 

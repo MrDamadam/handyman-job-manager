@@ -7,4 +7,6 @@ import java.util.List;
 public interface JobRepository extends JpaRepository<Job, Long> {
 
     List<Job> findByCustomerId(Long customerId);
+
+    boolean existsByCustomerId(Long customerId);
 }

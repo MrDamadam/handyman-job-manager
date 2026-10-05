@@ -26,12 +26,12 @@ import { Payments } from './components/payments/payments';
   templateUrl: './app.html',
 })
 export class App implements OnInit {
-
   public customers = signal<Customer[]>([]);
   public jobs = signal<Job[]>([]);
   public invoices = signal<Invoice[]>([]);
   public payments = signal<Payment[]>([]);
 
+  public customerError = signal<string | null>(null);
   public jobError = signal<string | null>(null);
   public invoiceError = signal<string | null>(null);
   public paymentError = signal<string | null>(null);
@@ -58,79 +58,103 @@ export class App implements OnInit {
     });
   }
 
-  createCustomerFromForm(request: SaveRequest<{
-    firstName: string;
-    lastName: string;
-    email: string;
-    phone: string;
-  }>): void {
+  createCustomerFromForm(
+    request: SaveRequest<{
+      firstName: string;
+      lastName: string;
+      email: string;
+      phone: string;
+    }>,
+  ): void {
     const customer = request.value;
-    this.customerService.createCustomer(customer).pipe(settleSave(request)).subscribe((createdCustomer) => {
-      this.customers.update((customers) => [...customers, createdCustomer]);
-    });
+    this.customerService
+      .createCustomer(customer)
+      .pipe(settleSave(request))
+      .subscribe((createdCustomer) => {
+        this.customers.update((customers) => [...customers, createdCustomer]);
+      });
   }
 
   saveCustomer(request: SaveRequest<Customer>): void {
     const customer = request.value;
-    this.customerService.updateCustomer(customer).pipe(settleSave(request)).subscribe((updatedCustomer) => {
-      this.customers.update((customers) =>
-        customers.map((existingCustomer) =>
-          existingCustomer.id === updatedCustomer.id ? updatedCustomer : existingCustomer,
-        ),
-      );
-      this.jobs.update((jobs) =>
-        jobs.map((job) =>
-          job.customerId === updatedCustomer.id
-            ? {
-                ...job,
-                customerFirstName: updatedCustomer.firstName,
-                customerLastName: updatedCustomer.lastName,
-              }
-            : job,
-        ),
-      );
-    });
+    this.customerService
+      .updateCustomer(customer)
+      .pipe(settleSave(request))
+      .subscribe((updatedCustomer) => {
+        this.customers.update((customers) =>
+          customers.map((existingCustomer) =>
+            existingCustomer.id === updatedCustomer.id ? updatedCustomer : existingCustomer,
+          ),
+        );
+        this.jobs.update((jobs) =>
+          jobs.map((job) =>
+            job.customerId === updatedCustomer.id
+              ? {
+                  ...job,
+                  customerFirstName: updatedCustomer.firstName,
+                  customerLastName: updatedCustomer.lastName,
+                }
+              : job,
+          ),
+        );
+      });
   }
 
   deleteCustomer(id: number): void {
-    this.customerService.deleteCustomer(id).subscribe(() => {
-      this.customers.update((customers) => customers.filter((customer) => customer.id !== id));
+    this.customerError.set(null);
+    this.customerService.deleteCustomer(id).subscribe({
+      next: () => {
+        this.customers.update((customers) => customers.filter((customer) => customer.id !== id));
+      },
+      error: (error) => {
+        this.customerError.set(
+          error.error?.error ?? 'Unable to delete customer. Please try again.',
+        );
+      },
     });
   }
 
-  createJobFromForm(request: SaveRequest<{
-    title: string;
-    description: string;
-    estimatedAmount: number;
-    status: 'ESTIMATE';
-    customerId: number;
-  }>): void {
+  createJobFromForm(
+    request: SaveRequest<{
+      title: string;
+      description: string;
+      estimatedAmount: number;
+      status: 'ESTIMATE';
+      customerId: number;
+    }>,
+  ): void {
     const job = request.value;
     const customerId = job.customerId;
-    this.jobService.createJob(customerId, job).pipe(settleSave(request)).subscribe((createdJob) => {
-      this.jobs.update((jobs) => [...jobs, createdJob]);
-    });
+    this.jobService
+      .createJob(customerId, job)
+      .pipe(settleSave(request))
+      .subscribe((createdJob) => {
+        this.jobs.update((jobs) => [...jobs, createdJob]);
+      });
   }
 
   saveJob(request: SaveRequest<Job>): void {
     const job = request.value;
-    this.jobService.updateJob(job).pipe(settleSave(request)).subscribe((updatedJob) => {
-      this.jobs.update((jobs) =>
-        jobs.map((existingJob) => (existingJob.id === updatedJob.id ? updatedJob : existingJob)),
-      );
-      this.invoices.update((invoices) =>
-        invoices.map((invoice) => {
-          if (invoice.jobId !== updatedJob.id) {
-            return invoice;
-          }
-          return {
-            ...invoice,
-            jobTitle: updatedJob.title,
-            amount: invoice.status === 'DRAFT' ? updatedJob.estimatedAmount : invoice.amount,
-          };
-        }),
-      );
-    });
+    this.jobService
+      .updateJob(job)
+      .pipe(settleSave(request))
+      .subscribe((updatedJob) => {
+        this.jobs.update((jobs) =>
+          jobs.map((existingJob) => (existingJob.id === updatedJob.id ? updatedJob : existingJob)),
+        );
+        this.invoices.update((invoices) =>
+          invoices.map((invoice) => {
+            if (invoice.jobId !== updatedJob.id) {
+              return invoice;
+            }
+            return {
+              ...invoice,
+              jobTitle: updatedJob.title,
+              amount: invoice.status === 'DRAFT' ? updatedJob.estimatedAmount : invoice.amount,
+            };
+          }),
+        );
+      });
   }
 
   deleteJob(id: number): void {
@@ -145,24 +169,32 @@ export class App implements OnInit {
     });
   }
 
-  createInvoiceFromForm(request: SaveRequest<{ jobId: number; amount: number; status: 'DRAFT' }>): void {
+  createInvoiceFromForm(
+    request: SaveRequest<{ jobId: number; amount: number; status: 'DRAFT' }>,
+  ): void {
     const invoice = request.value;
     const jobId = invoice.jobId;
 
-    this.invoiceService.createInvoice(jobId, invoice).pipe(settleSave(request)).subscribe((createdInvoice) => {
-      this.invoices.update((invoices) => [...invoices, createdInvoice]);
-    });
+    this.invoiceService
+      .createInvoice(jobId, invoice)
+      .pipe(settleSave(request))
+      .subscribe((createdInvoice) => {
+        this.invoices.update((invoices) => [...invoices, createdInvoice]);
+      });
   }
 
   saveInvoice(request: SaveRequest<Invoice>): void {
     const invoice = request.value;
-    this.invoiceService.updateInvoice(invoice).pipe(settleSave(request)).subscribe((updatedInvoice) => {
-      this.invoices.update((invoices) =>
-        invoices.map((existingInvoice) =>
-          existingInvoice.id === updatedInvoice.id ? updatedInvoice : existingInvoice,
-        ),
-      );
-    });
+    this.invoiceService
+      .updateInvoice(invoice)
+      .pipe(settleSave(request))
+      .subscribe((updatedInvoice) => {
+        this.invoices.update((invoices) =>
+          invoices.map((existingInvoice) =>
+            existingInvoice.id === updatedInvoice.id ? updatedInvoice : existingInvoice,
+          ),
+        );
+      });
   }
 
   deleteInvoice(id: number): void {
@@ -177,22 +209,35 @@ export class App implements OnInit {
     });
   }
 
-  createPaymentFromForm(request: SaveRequest<{
-    invoiceId: number;
-    amount: number;
-    paymentMethod: 'CASH';
-  }>): void {
+  createPaymentFromForm(
+    request: SaveRequest<{
+      invoiceId: number;
+      amount: number;
+      paymentMethod: 'CASH';
+    }>,
+  ): void {
     const payment = request.value;
     this.paymentError.set(null);
     const invoiceId = payment.invoiceId;
-    this.paymentService.createPayment(invoiceId, payment).pipe(settleSave(request)).subscribe((createdPayment) => {
-      this.payments.update((payments) => [...payments, createdPayment]);
-      this.invoiceService.getInvoice(createdPayment.invoiceId).subscribe({ next: (updatedInvoice) => {
-        this.invoices.update((invoices) =>
-          invoices.map((invoice) => (invoice.id === updatedInvoice.id ? updatedInvoice : invoice)),
-        );
-      }, error: () => this.paymentError.set('Payment saved, but invoice details could not refresh. Reload the page; do not submit the payment again.') });
-    });
+    this.paymentService
+      .createPayment(invoiceId, payment)
+      .pipe(settleSave(request))
+      .subscribe((createdPayment) => {
+        this.payments.update((payments) => [...payments, createdPayment]);
+        this.invoiceService.getInvoice(createdPayment.invoiceId).subscribe({
+          next: (updatedInvoice) => {
+            this.invoices.update((invoices) =>
+              invoices.map((invoice) =>
+                invoice.id === updatedInvoice.id ? updatedInvoice : invoice,
+              ),
+            );
+          },
+          error: () =>
+            this.paymentError.set(
+              'Payment saved, but invoice details could not refresh. Reload the page; do not submit the payment again.',
+            ),
+        });
+      });
   }
 
   deletePayment(payment: Payment): void {
@@ -206,13 +251,19 @@ export class App implements OnInit {
         this.invoiceService.getInvoice(invoiceId).subscribe({
           next: (updatedInvoice) => {
             this.invoices.update((invoices) =>
-              invoices.map((invoice) => invoice.id === updatedInvoice.id ? updatedInvoice : invoice),
+              invoices.map((invoice) =>
+                invoice.id === updatedInvoice.id ? updatedInvoice : invoice,
+              ),
             );
           },
-          error: () => this.paymentError.set('Payment deleted, but invoice details could not refresh. Reload the page.'),
+          error: () =>
+            this.paymentError.set(
+              'Payment deleted, but invoice details could not refresh. Reload the page.',
+            ),
         });
       },
-      error: (error) => this.paymentError.set(error.error?.error ?? 'Unable to delete payment. Please try again.'),
+      error: (error) =>
+        this.paymentError.set(error.error?.error ?? 'Unable to delete payment. Please try again.'),
     });
   }
 }

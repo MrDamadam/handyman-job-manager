@@ -7,6 +7,7 @@ import com.adamaleweidat.handymanager.invoice.InvoiceRepository;
 import com.adamaleweidat.handymanager.invoice.InvoiceService;
 import com.adamaleweidat.handymanager.invoice.InvoiceStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -41,6 +42,7 @@ public class JobService {
         return jobRepository.save(job);
     }
 
+    @Transactional
     public Job updateJob(Long id, Job updatedJob) {
         Job existingJob = getJob(id);
         existingJob.setTitle(updatedJob.getTitle());

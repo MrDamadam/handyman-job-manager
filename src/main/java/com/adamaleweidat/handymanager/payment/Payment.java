@@ -15,6 +15,7 @@ public class Payment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @NotNull
     @Positive
     private BigDecimal amount;
 

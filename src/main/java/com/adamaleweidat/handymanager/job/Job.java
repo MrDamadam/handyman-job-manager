@@ -24,6 +24,7 @@ public class Job {
 
     private String description;
 
+    @NotNull
     @PositiveOrZero
     private BigDecimal estimatedAmount;
 

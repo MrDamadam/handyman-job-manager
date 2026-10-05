@@ -15,6 +15,7 @@ public class Invoice {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @NotNull
     @PositiveOrZero
     private BigDecimal amount;
 

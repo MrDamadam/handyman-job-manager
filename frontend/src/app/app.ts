@@ -1,10 +1,9 @@
 import { SaveRequest, settleSave } from './shared/save-state';
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, computed, signal } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
 
-import { Customer } from './models/customer';
-import { CustomerService } from './services/customer.service';
+import { CustomerFacade } from './facades/customer.facade';
 import { Customers } from './components/customers/customers';
 
 import { Job } from './models/job';
@@ -26,7 +25,6 @@ import { Payments } from './components/payments/payments';
   templateUrl: './app.html',
 })
 export class App implements OnInit {
-  public customers = signal<Customer[]>([]);
   public jobs = signal<Job[]>([]);
   public invoices = signal<Invoice[]>([]);
   public payments = signal<Payment[]>([]);
@@ -36,17 +34,31 @@ export class App implements OnInit {
   public invoiceError = signal<string | null>(null);
   public paymentError = signal<string | null>(null);
 
+  readonly jobsForDisplay = computed(() => {
+    const customersById = new Map(
+      this.customerFacade.customers().map((customer) => [customer.id, customer]),
+    );
+    return this.jobs().map((job) => {
+      const customer = customersById.get(job.customerId);
+      return customer
+        ? {
+            ...job,
+            customerFirstName: customer.firstName,
+            customerLastName: customer.lastName,
+          }
+        : job;
+    });
+  });
+
   constructor(
-    private customerService: CustomerService,
+    public readonly customerFacade: CustomerFacade,
     private jobService: JobService,
     private invoiceService: InvoiceService,
     private paymentService: PaymentService,
   ) {}
 
   ngOnInit(): void {
-    this.customerService.getCustomers().subscribe((customers) => {
-      this.customers.set(customers);
-    });
+    this.customerFacade.load();
     this.jobService.getJobs().subscribe((jobs) => {
       this.jobs.set(jobs);
     });
@@ -55,62 +67,6 @@ export class App implements OnInit {
     });
     this.paymentService.getPayments().subscribe((payments) => {
       this.payments.set(payments);
-    });
-  }
-
-  createCustomerFromForm(
-    request: SaveRequest<{
-      firstName: string;
-      lastName: string;
-      email: string;
-      phone: string;
-    }>,
-  ): void {
-    const customer = request.value;
-    this.customerService
-      .createCustomer(customer)
-      .pipe(settleSave(request))
-      .subscribe((createdCustomer) => {
-        this.customers.update((customers) => [...customers, createdCustomer]);
-      });
-  }
-
-  saveCustomer(request: SaveRequest<Customer>): void {
-    const customer = request.value;
-    this.customerService
-      .updateCustomer(customer)
-      .pipe(settleSave(request))
-      .subscribe((updatedCustomer) => {
-        this.customers.update((customers) =>
-          customers.map((existingCustomer) =>
-            existingCustomer.id === updatedCustomer.id ? updatedCustomer : existingCustomer,
-          ),
-        );
-        this.jobs.update((jobs) =>
-          jobs.map((job) =>
-            job.customerId === updatedCustomer.id
-              ? {
-                  ...job,
-                  customerFirstName: updatedCustomer.firstName,
-                  customerLastName: updatedCustomer.lastName,
-                }
-              : job,
-          ),
-        );
-      });
-  }
-
-  deleteCustomer(id: number): void {
-    this.customerError.set(null);
-    this.customerService.deleteCustomer(id).subscribe({
-      next: () => {
-        this.customers.update((customers) => customers.filter((customer) => customer.id !== id));
-      },
-      error: (error) => {
-        this.customerError.set(
-          error.error?.error ?? 'Unable to delete customer. Please try again.',
-        );
-      },
     });
   }
 

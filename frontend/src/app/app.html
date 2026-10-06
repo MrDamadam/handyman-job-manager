@@ -4,20 +4,19 @@
   <section class="customers">
     <h2>Customers</h2>
     <app-customers
-      [customers]="customers()"
-      [customerError]="customerError()"
-      (createCustomer)="createCustomerFromForm($event)"
-      (customerUpdated)="saveCustomer($event)"
-      (deleteCustomer)="deleteCustomer($event)"
+      [customers]="customerFacade.customers()"
+      [customerError]="customerFacade.error()"
+      (createCustomer)="customerFacade.create($event)"
+      (customerUpdated)="customerFacade.update($event)"
+      (deleteCustomer)="customerFacade.delete($event)"
     ></app-customers>
-
   </section>
 
   <section class="jobs">
     <h2>Jobs</h2>
     <app-jobs
-      [jobs]="jobs()"
-      [customers]="customers()"
+      [jobs]="jobsForDisplay()"
+      [customers]="customerFacade.customers()"
       [jobError]="jobError()"
       (createJob)="createJobFromForm($event)"
       (jobUpdated)="saveJob($event)"
@@ -30,7 +29,7 @@
     <app-invoices
       [invoices]="invoices()"
       [payments]="payments()"
-      [jobs]="jobs()"
+      [jobs]="jobsForDisplay()"
       [invoiceError]="invoiceError()"
       (createInvoice)="createInvoiceFromForm($event)"
       (invoiceUpdated)="saveInvoice($event)"
